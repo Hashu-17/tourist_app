@@ -55,10 +55,12 @@ class _HomeState extends State<Home> {
     final filteredDestinations = _searchQuery.isEmpty
         ? destinations
         : destinations
-            .where((place) => place["name"]!
-                .toLowerCase()
-                .contains(_searchQuery.toLowerCase()))
-            .toList();
+              .where(
+                (place) => place["name"]!.toLowerCase().contains(
+                  _searchQuery.toLowerCase(),
+                ),
+              )
+              .toList();
 
     return Scaffold(
       body: Container(
@@ -152,7 +154,9 @@ class _HomeState extends State<Home> {
                               Text(
                                 "A tourist's guide",
                                 style: TextStyle(
-                                  fontSize: kIsWeb ? 20.0 : (imageWidth * 0.05).clamp(12.0, 24.0),
+                                  fontSize: kIsWeb
+                                      ? 20.0
+                                      : (imageWidth * 0.05).clamp(12.0, 24.0),
                                   fontWeight: FontWeight.w400,
                                   color: Colors.white,
                                   fontFamily: 'Lato',
@@ -187,7 +191,9 @@ class _HomeState extends State<Home> {
                                   prefixIcon: Icon(Icons.search),
                                   hintText: 'Search your destination',
                                   hintStyle: TextStyle(
-                                      color: Colors.grey, fontFamily: 'Lato'),
+                                    color: Colors.grey,
+                                    fontFamily: 'Lato',
+                                  ),
                                 ),
                               ),
                             ),
@@ -200,14 +206,18 @@ class _HomeState extends State<Home> {
               ),
               const SizedBox(height: 40),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15), // Cards closer to edges
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 15,
+                ), // Cards closer to edges
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: filteredDestinations.map((place) {
                     return SizedBox(
                       width: double.infinity,
                       child: Card(
-                        margin: const EdgeInsets.only(bottom: 20), // Increased gap between cards
+                        margin: const EdgeInsets.only(
+                          bottom: 20,
+                        ), // Increased gap between cards
                         color: Colors.transparent,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
@@ -248,7 +258,8 @@ class _HomeState extends State<Home> {
                                   height: 260,
                                   padding: const EdgeInsets.all(15.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         mainAxisAlignment:
@@ -280,24 +291,31 @@ class _HomeState extends State<Home> {
                                                 ),
                                               ),
                                               if (place["weather"] == "Sunny")
-                                                const Icon(Icons.wb_sunny,
-                                                    color: Colors.white,
-                                                    size: 28)
+                                                const Icon(
+                                                  Icons.wb_sunny,
+                                                  color: Colors.white,
+                                                  size: 28,
+                                                )
                                               else if (place["weather"] ==
                                                   "Cloudy")
-                                                const Icon(Icons.cloud,
-                                                    color: Colors.white,
-                                                    size: 28)
+                                                const Icon(
+                                                  Icons.cloud,
+                                                  color: Colors.white,
+                                                  size: 28,
+                                                )
                                               else if (place["weather"] ==
                                                   "Rainy")
-                                                const Icon(Icons.grain,
-                                                    color: Colors.white,
-                                                    size: 28)
+                                                const Icon(
+                                                  Icons.grain,
+                                                  color: Colors.white,
+                                                  size: 28,
+                                                )
                                               else
                                                 const Icon(
-                                                    Icons.help_outline,
-                                                    color: Colors.white,
-                                                    size: 28),
+                                                  Icons.help_outline,
+                                                  color: Colors.white,
+                                                  size: 28,
+                                                ),
                                             ],
                                           ),
                                         ],
