@@ -1,6 +1,33 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
+Stream<double> getTemperatureStream(String location) async* {
+  // Simulate different starting temps for each location
+  double temp;
+  switch (location) {
+    case "LAITLUM":
+      temp = 18.0;
+      break;
+    case "SOHRA":
+      temp = 22.0;
+      break;
+    case "DAWKI":
+      temp = 28.0;
+      break;
+    case "Ward's Lake":
+      temp = 24.0;
+      break;
+    default:
+      temp = 20.0;
+  }
+  while (true) {
+    await Future.delayed(const Duration(seconds: 2));
+    // Simulate temperature change
+    temp += ([-1, 1]..shuffle()).first * (0.5 + (1.5 * (0.5 - (DateTime.now().millisecond % 1000) / 1000)));
+    yield temp;
+  }
+}
+
 class Home extends StatefulWidget {
   const Home({super.key});
 
@@ -282,13 +309,38 @@ class _HomeState extends State<Home> {
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.end,
                                             children: [
-                                              Text(
-                                                place["temp"] ?? "24°C",
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 30,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
+                                              StreamBuilder<double>(
+                                                stream: getTemperatureStream(place["name"]!),
+                                                builder: (context, snapshot) {
+                                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                                    return const Text(
+                                                      '...',
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 30,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    );
+                                                  } else if (snapshot.hasError) {
+                                                    return const Text(
+                                                      '--',
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 30,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    );
+                                                  } else {
+                                                    return Text(
+                                                      '${snapshot.data?.toStringAsFixed(1) ?? "--"}°C',
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 30,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    );
+                                                  }
+                                                },
                                               ),
                                               if (place["weather"] == "Sunny")
                                                 const Icon(
