@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:tourist_app/pages/home.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
@@ -32,7 +36,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green[200]!),
       ),
-      home: Home()
+      home: Home(),
     );
   }
 }
@@ -49,7 +53,9 @@ class MyHomePage extends StatefulWidget {
   // used by the build method of the State. Fields in a Widget subclass are
   // always marked "final".
 
-  final String title; ///a
+  final String title;
+
+  ///a
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();

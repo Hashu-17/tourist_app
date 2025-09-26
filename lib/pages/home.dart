@@ -1,31 +1,31 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
-Stream<double> getTemperatureStream(String location) async* {
-  // Simulate different starting temps for each location
-  double temp;
-  switch (location) {
-    case "LAITLUM":
-      temp = 18.0;
-      break;
-    case "SOHRA":
-      temp = 22.0;
-      break;
-    case "DAWKI":
-      temp = 28.0;
-      break;
-    case "Ward's Lake":
-      temp = 24.0;
-      break;
-    default:
-      temp = 20.0;
-  }
-  while (true) {
-    await Future.delayed(const Duration(seconds: 2));
-    // Simulate temperature change
-    temp += ([-1, 1]..shuffle()).first * (0.5 + (1.5 * (0.5 - (DateTime.now().millisecond % 1000) / 1000)));
-    yield temp;
-  }
+// Map UI names to Firestore collections
+const Map<String, String> kPlaceToCollection = {
+  'LAITLUM': 'LAITLUM',
+  'SOHRA': 'SOHRA',
+  'DAWKI': 'DAWKI',
+  "Ward's Lake": 'WardsLake', // example collection id without space/apostrophe
+};
+
+// Replace the simulated stream with Firestore
+Stream<double?> getTemperatureStream(String placeName) {
+  final collection = kPlaceToCollection[placeName];
+  if (collection == null) return const Stream<double?>.empty();
+
+  return FirebaseFirestore.instance
+      .collection(collection) // was: .collection('sensor-readings')
+      .orderBy('timestamp', descending: true)
+      .limit(1)
+      .snapshots()
+      .map((snap) {
+        if (snap.docs.isEmpty) return null;
+        final data = snap.docs.first.data();
+        final value = data['temperature'];
+        return (value is num) ? value.toDouble() : null;
+      });
 }
 
 class Home extends StatefulWidget {
@@ -309,34 +309,42 @@ class _HomeState extends State<Home> {
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.end,
                                             children: [
-                                              StreamBuilder<double>(
-                                                stream: getTemperatureStream(place["name"]!),
+                                              StreamBuilder<double?>(
+                                                stream: getTemperatureStream(
+                                                  place["name"]!,
+                                                ),
                                                 builder: (context, snapshot) {
-                                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                                  if (snapshot
+                                                          .connectionState ==
+                                                      ConnectionState.waiting) {
                                                     return const Text(
                                                       '...',
                                                       style: TextStyle(
                                                         color: Colors.white,
                                                         fontSize: 30,
-                                                        fontWeight: FontWeight.bold,
+                                                        fontWeight:
+                                                            FontWeight.bold,
                                                       ),
                                                     );
-                                                  } else if (snapshot.hasError) {
+                                                  } else if (snapshot
+                                                      .hasError) {
                                                     return const Text(
                                                       '--',
                                                       style: TextStyle(
                                                         color: Colors.white,
                                                         fontSize: 30,
-                                                        fontWeight: FontWeight.bold,
+                                                        fontWeight:
+                                                            FontWeight.bold,
                                                       ),
                                                     );
                                                   } else {
                                                     return Text(
-                                                      '${snapshot.data?.toStringAsFixed(1) ?? "--"}°C',
+                                                      '${snapshot.data?.toStringAsFixed(2) ?? "--"}°C',
                                                       style: const TextStyle(
                                                         color: Colors.white,
                                                         fontSize: 30,
-                                                        fontWeight: FontWeight.bold,
+                                                        fontWeight:
+                                                            FontWeight.bold,
                                                       ),
                                                     );
                                                   }
