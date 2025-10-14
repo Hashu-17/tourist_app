@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:video_player/video_player.dart';
+import 'package:tourist_app/pages/map.dart';
 
 // Firestore collection mapping
 const Map<String, String> kPlaceToCollection = {
@@ -22,10 +23,10 @@ Stream<double?> getTemperatureStream(String placeName) {
       .limit(1)
       .snapshots()
       .map((s) {
-    if (s.docs.isEmpty) return null;
-    final v = s.docs.first.data()['temperature'];
-    return (v is num) ? v.toDouble() : null;
-  });
+        if (s.docs.isEmpty) return null;
+        final v = s.docs.first.data()['temperature'];
+        return (v is num) ? v.toDouble() : null;
+      });
 }
 
 Stream<String?> getWeatherStream(String placeName) {
@@ -37,10 +38,10 @@ Stream<String?> getWeatherStream(String placeName) {
       .limit(1)
       .snapshots()
       .map((s) {
-    if (s.docs.isEmpty) return null;
-    final v = s.docs.first.data()['weather'];
-    return (v is String) ? v : null;
-  });
+        if (s.docs.isEmpty) return null;
+        final v = s.docs.first.data()['weather'];
+        return (v is String) ? v : null;
+      });
 }
 
 Stream<int?> getVisitorCountStream(String placeName) {
@@ -52,29 +53,29 @@ Stream<int?> getVisitorCountStream(String placeName) {
       .limit(1)
       .snapshots()
       .map((s) {
-    if (s.docs.isEmpty) return null;
-    final data = s.docs.first.data();
+        if (s.docs.isEmpty) return null;
+        final data = s.docs.first.data();
 
-    for (final k in [
-      'people_count_total',
-      'people_count',
-      'visitor_count',
-      'visitors'
-    ]) {
-      final v = data[k];
-      if (v is num) return v.toInt();
-    }
+        for (final k in [
+          'people_count_total',
+          'people_count',
+          'visitor_count',
+          'visitors',
+        ]) {
+          final v = data[k];
+          if (v is num) return v.toInt();
+        }
 
-    final nested = data['people_counts'];
-    if (nested is Map<String, dynamic>) {
-      int sum = 0;
-      nested.forEach((_, v) {
-        if (v is num) sum += v.toInt();
+        final nested = data['people_counts'];
+        if (nested is Map<String, dynamic>) {
+          int sum = 0;
+          nested.forEach((_, v) {
+            if (v is num) sum += v.toInt();
+          });
+          return sum;
+        }
+        return null;
       });
-      return sum;
-    }
-    return null;
-  });
 }
 
 class Home extends StatefulWidget {
@@ -85,26 +86,10 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   final List<Map<String, String>> destinations = [
-    {
-      "name": "LAITLUM",
-      "image": "images/laitlum.jpg",
-      "weather": "Sunny",
-    },
-    {
-      "name": "SOHRA",
-      "image": "images/sohra.jpg",
-      "weather": "Rainy",
-    },
-    {
-      "name": "DAWKI",
-      "image": "images/dawki.jpg",
-      "weather": "Sunny",
-    },
-    {
-      "name": "Ward's Lake",
-      "image": "images/wards2.jpg",
-      "weather": "Sunny",
-    },
+    {"name": "LAITLUM", "image": "images/laitlum.jpg", "weather": "Sunny"},
+    {"name": "SOHRA", "image": "images/sohra.jpg", "weather": "Rainy"},
+    {"name": "DAWKI", "image": "images/dawki.jpg", "weather": "Sunny"},
+    {"name": "Ward's Lake", "image": "images/wards2.jpg", "weather": "Sunny"},
   ];
 
   final TextEditingController _searchController = TextEditingController();
@@ -115,35 +100,40 @@ class _HomeState extends State<Home> {
   bool _laitlumVideoReady = false;
 
   late final VideoPlayerController _sohraVideoController; // NEW
-  bool _sohraVideoReady = false;                         // NEW
+  bool _sohraVideoReady = false; // NEW
 
   @override
   void initState() {
     super.initState();
 
-    _laitlumVideoController = VideoPlayerController.asset(
-      'assets/videos/laitlum/laitlum_gen.mp4',            // UPDATED path
-    )
-      ..setLooping(true)
-      ..setVolume(0)
-      ..initialize().then((_) {
-        if (!mounted) return;
-        _laitlumVideoController.play();
-        setState(() => _laitlumVideoReady = true);
-      }).catchError(
-          (e) => debugPrint('LAITLUM video init failed: $e'));
+    _laitlumVideoController =
+        VideoPlayerController.asset(
+            'assets/videos/laitlum/laitlum_gen.mp4', // UPDATED path
+          )
+          ..setLooping(true)
+          ..setVolume(0)
+          ..initialize()
+              .then((_) {
+                if (!mounted) return;
+                _laitlumVideoController.play();
+                setState(() => _laitlumVideoReady = true);
+              })
+              .catchError((e) => debugPrint('LAITLUM video init failed: $e'));
 
-    _sohraVideoController = VideoPlayerController.asset( // NEW
-      'assets/videos/sohra/sohra_gen.mp4',               // NEW
-    )
-      ..setLooping(true)
-      ..setVolume(0)
-      ..initialize().then((_) {
-        if (!mounted) return;
-        _sohraVideoController.play();
-        setState(() => _sohraVideoReady = true);
-      }).catchError(
-          (e) => debugPrint('SOHRA video init failed: $e'));
+    _sohraVideoController =
+        VideoPlayerController.asset(
+            // NEW
+            'assets/videos/sohra/sohra_gen.mp4', // NEW
+          )
+          ..setLooping(true)
+          ..setVolume(0)
+          ..initialize()
+              .then((_) {
+                if (!mounted) return;
+                _sohraVideoController.play();
+                setState(() => _sohraVideoReady = true);
+              })
+              .catchError((e) => debugPrint('SOHRA video init failed: $e'));
   }
 
   @override
@@ -171,9 +161,9 @@ class _HomeState extends State<Home> {
             Positioned.fill(
               child: (name == 'LAITLUM' && _laitlumVideoReady)
                   ? _CoverVideo(controller: _laitlumVideoController)
-                  : (name == 'SOHRA' && _sohraVideoReady)                 // NEW
-                      ? _CoverVideo(controller: _sohraVideoController)    // NEW
-                      : Image.asset(imagePath, fit: BoxFit.cover),
+                  : (name == 'SOHRA' && _sohraVideoReady) // NEW
+                  ? _CoverVideo(controller: _sohraVideoController) // NEW
+                  : Image.asset(imagePath, fit: BoxFit.cover),
             ),
             Positioned.fill(
               child: Container(
@@ -278,8 +268,7 @@ class _HomeState extends State<Home> {
                     const Spacer(),
                     Row(
                       children: [
-                        const Icon(Icons.people,
-                            color: Colors.white, size: 20),
+                        const Icon(Icons.people, color: Colors.white, size: 20),
                         const SizedBox(width: 6),
                         StreamBuilder<int?>(
                           stream: getVisitorCountStream(name),
@@ -328,9 +317,12 @@ class _HomeState extends State<Home> {
     final filtered = _searchQuery.isEmpty
         ? destinations
         : destinations
-            .where((p) =>
-                p['name']!.toLowerCase().contains(_searchQuery.toLowerCase()))
-            .toList();
+              .where(
+                (p) => p['name']!.toLowerCase().contains(
+                  _searchQuery.toLowerCase(),
+                ),
+              )
+              .toList();
 
     return Scaffold(
       body: Container(
@@ -339,8 +331,9 @@ class _HomeState extends State<Home> {
         height: double.infinity,
         child: SingleChildScrollView(
           child: ConstrainedBox(
-            constraints:
-                BoxConstraints(minHeight: MediaQuery.of(context).size.height),
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -371,7 +364,13 @@ class _HomeState extends State<Home> {
                                   color: Colors.transparent,
                                   child: InkWell(
                                     borderRadius: BorderRadius.circular(20),
-                                    onTap: () {},
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => const MapPage(),
+                                        ),
+                                      );
+                                    },
                                     child: Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
@@ -416,8 +415,9 @@ class _HomeState extends State<Home> {
                                 Text(
                                   'MegTourism',
                                   style: TextStyle(
-                                    fontSize:
-                                        kIsWeb ? 48.0 : imageWidth * 0.130,
+                                    fontSize: kIsWeb
+                                        ? 48.0
+                                        : imageWidth * 0.130,
                                     fontWeight: FontWeight.w500,
                                     color: Colors.white,
                                     fontFamily: 'Lato',
@@ -428,8 +428,7 @@ class _HomeState extends State<Home> {
                                   style: TextStyle(
                                     fontSize: kIsWeb
                                         ? 20.0
-                                        : (imageWidth * 0.05)
-                                            .clamp(12.0, 24.0),
+                                        : (imageWidth * 0.05).clamp(12.0, 24.0),
                                     fontWeight: FontWeight.w400,
                                     color: Colors.white,
                                     fontFamily: 'Lato',
@@ -479,8 +478,9 @@ class _HomeState extends State<Home> {
                   padding: const EdgeInsets.symmetric(horizontal: 15),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children:
-                        filtered.map(_buildDestinationCard).toList(growable: false),
+                    children: filtered
+                        .map(_buildDestinationCard)
+                        .toList(growable: false),
                   ),
                 ),
               ],
@@ -499,8 +499,9 @@ class _CoverVideo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
-      aspectRatio:
-          controller.value.isInitialized ? controller.value.aspectRatio : 16 / 9,
+      aspectRatio: controller.value.isInitialized
+          ? controller.value.aspectRatio
+          : 16 / 9,
       child: VideoPlayer(controller),
     );
   }
