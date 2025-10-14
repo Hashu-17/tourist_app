@@ -95,39 +95,39 @@ class _MapPageState extends State<MapPage> {
         .limit(1)
         .snapshots()
         .listen((snap) {
-      int? count;
-      if (snap.docs.isNotEmpty) {
-        final data = snap.docs.first.data();
-        for (final k in [
-          'people_count_total',
-          'people_count',
-          'visitor_count',
-          'visitors',
-        ]) {
-          final v = data[k];
-            if (v is num) {
-              count = v.toInt();
-              break;
+          int? count;
+          if (snap.docs.isNotEmpty) {
+            final data = snap.docs.first.data();
+            for (final k in [
+              'people_count_total',
+              'people_count',
+              'visitor_count',
+              'visitors',
+            ]) {
+              final v = data[k];
+              if (v is num) {
+                count = v.toInt();
+                break;
+              }
             }
-        }
-        if (count == null) {
-          final nested = data['people_counts'];
-          if (nested is Map<String, dynamic>) {
-            int sum = 0;
-            nested.forEach((_, v) {
-              if (v is num) sum += v.toInt();
-            });
-            count = sum;
+            if (count == null) {
+              final nested = data['people_counts'];
+              if (nested is Map<String, dynamic>) {
+                int sum = 0;
+                nested.forEach((_, v) {
+                  if (v is num) sum += v.toInt();
+                });
+                count = sum;
+              }
+            }
           }
-        }
-      }
-      if (count != _laitlumVisitorsToday) {
-        setState(() {
-          _laitlumVisitorsToday = count;
+          if (count != _laitlumVisitorsToday) {
+            setState(() {
+              _laitlumVisitorsToday = count;
+            });
+            _refreshLaitlumMarker(); // update only that marker
+          }
         });
-        _refreshLaitlumMarker(); // update only that marker
-      }
-    });
   }
 
   // Rebuild only Laitlum marker when count changes
