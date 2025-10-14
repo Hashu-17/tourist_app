@@ -44,16 +44,21 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Flutter/Dart
+# Flutter / Dart
 .dart_tool/
 .packages
 pubspec.lock
+/build/
+**/build/
 
-# Build outputs
-build/
+# Android build artifacts
 android/app/build/
 android/.gradle/
-android/.idea/
+android/app/debug/
+android/app/profile/
+android/app/release/
+
+# iOS
 ios/Pods/
 ios/Flutter/Flutter.framework
 ios/Flutter/App.framework
@@ -61,7 +66,7 @@ ios/Flutter/App.framework
 # Generated
 *.log
 
-# IntelliJ / VS Code
+# IDE
 .idea/
 .vscode/
 
