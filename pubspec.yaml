@@ -56,9 +56,9 @@ flutter:
     - images/
     - animations/
     - assets/videos/laitlum/
+    # keep/remove as needed, but ensure they exist:
     - assets/videos/dawki/
-    - assets/videos/sohra/
-    - assets/videos/wards/
+    - assets/videos/wardslake/
 
   fonts:
     - family: Lato
