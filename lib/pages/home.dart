@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:video_player/video_player.dart';
 import 'package:tourist_app/pages/map.dart';
+import 'package:tourist_app/pages/clustered_map.dart';
+import 'package:tourist_app/pages/heatmap_map.dart';
 
 // Firestore collection mapping
 const Map<String, String> kPlaceToCollection = {
@@ -78,6 +80,58 @@ Stream<int?> getVisitorCountStream(String placeName) {
       });
 }
 
+/// Latest rain detection state for a place based on Pi uploader.
+/// Expects documents with fields: { kind: 'rain', rain_detected: bool }.
+Stream<bool?> getRainDetectedStream(String placeName) {
+  final c = kPlaceToCollection[placeName];
+  if (c == null) return const Stream<bool?>.empty();
+  final col = FirebaseFirestore.instance.collection(c);
+
+  // Special-case LAITLUM to read the known device doc id from your screenshot: 'rasperrypi'.
+  if (placeName == 'LAITLUM') {
+    return col.doc('rasperrypi').snapshots().map((doc) {
+      if (!doc.exists) return null;
+      final data = doc.data();
+      if (data == null) return null;
+      final v = data['rain_detected'];
+      if (v is bool) return v;
+      if (v is num) return v != 0;
+      return null;
+    });
+  }
+
+  // Default: pick any document tagged as kind=='rain'.
+  return col
+      .where('kind', isEqualTo: 'rain')
+      .limit(1)
+      .snapshots()
+      .map((s) {
+        if (s.docs.isEmpty) return null;
+        final v = s.docs.first.data()['rain_detected'];
+        if (v is bool) return v;
+        if (v is num) return v != 0;
+        return null;
+      });
+}
+
+/// Latest last_rain_update timestamp as DateTime, if available.
+Stream<DateTime?> getLastRainUpdateStream(String placeName) {
+  final c = kPlaceToCollection[placeName];
+  if (c == null) return const Stream<DateTime?>.empty();
+  return FirebaseFirestore.instance
+      .collection(c)
+      .where('kind', isEqualTo: 'rain')
+      .orderBy('last_rain_update', descending: true)
+      .limit(1)
+      .snapshots()
+      .map((s) {
+        if (s.docs.isEmpty) return null;
+        final v = s.docs.first.data()['last_rain_update'];
+        if (v is Timestamp) return v.toDate();
+        return null;
+      });
+}
+
 class Home extends StatefulWidget {
   const Home({super.key});
   @override
@@ -86,10 +140,8 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   final List<Map<String, String>> destinations = [
+    {"name": "OAK HALL", "image": "images/oak.jpg", "weather": "Sunny"},
     {"name": "LAITLUM", "image": "images/laitlum.jpg", "weather": "Sunny"},
-    {"name": "SOHRA", "image": "images/sohra.jpg", "weather": "Rainy"},
-    {"name": "DAWKI", "image": "images/dawki.jpg", "weather": "Sunny"},
-    {"name": "Ward's Lake", "image": "images/wards2.jpg", "weather": "Sunny"},
   ];
 
   final TextEditingController _searchController = TextEditingController();
@@ -118,7 +170,10 @@ class _HomeState extends State<Home> {
                 _laitlumVideoController.play();
                 setState(() => _laitlumVideoReady = true);
               })
-              .catchError((e) => debugPrint('LAITLUM video init failed: $e'));
+              .catchError((e) {
+                debugPrint('LAITLUM video init failed: $e');
+                return null;
+              });
 
     _sohraVideoController =
         VideoPlayerController.asset(
@@ -133,7 +188,10 @@ class _HomeState extends State<Home> {
                 _sohraVideoController.play();
                 setState(() => _sohraVideoReady = true);
               })
-              .catchError((e) => debugPrint('SOHRA video init failed: $e'));
+              .catchError((e) {
+                debugPrint('SOHRA video init failed: $e');
+                return null;
+              });
   }
 
   @override
@@ -161,22 +219,47 @@ class _HomeState extends State<Home> {
             Positioned.fill(
               child: (name == 'LAITLUM' && _laitlumVideoReady)
                   ? _CoverVideo(controller: _laitlumVideoController)
-                  : (name == 'SOHRA' && _sohraVideoReady) // NEW
-                  ? _CoverVideo(controller: _sohraVideoController) // NEW
-                  : Image.asset(imagePath, fit: BoxFit.cover),
+                  : Transform(
+                      alignment: Alignment.topCenter,
+                      transform: Matrix4.identity()
+                        ..translate(
+                          name == 'OAK HALL' ? 24.0 : 0.0, // Pan right for Oak Hall
+                          -68.0,
+                        )
+                        ..scale(1.32), // Zoom in by 32%
+                      child: Image.asset(imagePath, fit: BoxFit.cover),
+                    ),
             ),
             Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.45),
-                    ],
+              child: Stack(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: RadialGradient(
+                        center: Alignment.center,
+                        radius: 1.0,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.60),
+                        ],
+                        stops: [0.45, 1.0],
+                      ),
+                    ),
                   ),
-                ),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.45),
+                          Colors.transparent,
+                        ],
+                        stops: [0.0, 0.25],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             Positioned.fill(
@@ -204,62 +287,57 @@ class _HomeState extends State<Home> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            StreamBuilder<double?>(
-                              stream: getTemperatureStream(name),
-                              builder: (context, snap) {
-                                if (snap.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return const Text(
-                                    '...',
-                                    style: TextStyle(
+                            if (name == 'LAITLUM')
+                              const Text(
+                                '--°C',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )
+                            else
+                              StreamBuilder<double?>(
+                                stream: getTemperatureStream(name),
+                                builder: (context, snap) {
+                                  if (snap.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return const Text(
+                                      '...',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 30,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    );
+                                  }
+                                  if (snap.hasError) {
+                                    return const Text(
+                                      '--',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 30,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    );
+                                  }
+                                  return Text(
+                                    '${snap.data?.toStringAsFixed(2) ?? "--"}°C',
+                                    style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 30,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   );
-                                }
-                                if (snap.hasError) {
-                                  return const Text(
-                                    '--',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 30,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  );
-                                }
-                                return Text(
-                                  '${snap.data?.toStringAsFixed(2) ?? "--"}°C',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 30,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                );
-                              },
-                            ),
-                            StreamBuilder<String?>(
-                              stream: getWeatherStream(name),
-                              builder: (context, snap) {
-                                final weather =
-                                    (snap.data ?? place['weather'] ?? '')
-                                        .toLowerCase();
-                                String anim = 'animations/Sunny.json';
-                                if (weather.contains('rain') ||
-                                    weather.contains('storm')) {
-                                  anim = 'animations/ThunderStorm.json';
-                                } else if (weather.contains('cloud') ||
-                                    weather.contains('overcast') ||
-                                    weather.contains('wind')) {
-                                  anim = 'animations/Windy.json';
-                                }
-                                return Lottie.asset(
-                                  anim,
-                                  width: 40,
-                                  height: 40,
-                                  fit: BoxFit.cover,
-                                );
-                              },
+                                },
+                              ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Icon(
+                                Icons.wb_sunny,
+                                color: Colors.white,
+                                size: 40,
+                              ),
                             ),
                           ],
                         ),

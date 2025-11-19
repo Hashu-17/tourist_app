@@ -35,6 +35,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   video_player: ^2.8.7
   google_maps_flutter: any
+  flutter_map: any
+  flutter_map_heatmap: any
+  latlong2: any
  
 
 
